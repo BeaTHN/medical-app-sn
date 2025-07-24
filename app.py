@@ -416,7 +416,7 @@ class MedicalAIModel:
     def __init__(self):
         self.model = None
         self.classes = ["Normal", "Précancéreux", "Cancéreux"]
-        self.model_path = "R50_Herlev_7class.keras"
+        self.model_path = "R50_Herlev_7class.h5"
         self.load_model()
     
     def load_model(self):
