@@ -1,0 +1,109 @@
+
+    <!DOCTYPE html>
+    <html lang="fr">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Medical Center - Mode Hors Ligne</title>
+        <style>
+            body {
+                font-family: 'Inter', sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                margin: 0;
+                padding: 20px;
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .container {
+                background: white;
+                border-radius: 16px;
+                padding: 3rem;
+                text-align: center;
+                box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+                max-width: 500px;
+            }
+            .icon {
+                font-size: 4rem;
+                margin-bottom: 1rem;
+            }
+            .title {
+                font-size: 2rem;
+                font-weight: 700;
+                color: #4F46E5;
+                margin-bottom: 1rem;
+            }
+            .message {
+                color: #64748B;
+                line-height: 1.6;
+                margin-bottom: 2rem;
+            }
+            .button {
+                background: #4F46E5;
+                color: white;
+                padding: 12px 24px;
+                border: none;
+                border-radius: 8px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: background 0.3s ease;
+                margin: 0.5rem;
+            }
+            .button:hover {
+                background: #3730A3;
+            }
+            .features {
+                text-align: left;
+                margin-top: 2rem;
+                padding: 1rem;
+                background: #F8FAFC;
+                border-radius: 8px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="icon">📱</div>
+            <h1 class="title">Mode Hors Ligne</h1>
+            <p class="message">
+                Vous utilisez actuellement l'application en mode hors ligne. 
+                Certaines fonctionnalités sont limitées pour garantir la sécurité des données médicales.
+            </p>
+            
+            <div class="features">
+                <h3 style="color: #4F46E5; margin-top: 0;">Fonctionnalités disponibles hors ligne:</h3>
+                <ul style="color: #64748B;">
+                    <li>✅ Consultation des informations générales</li>
+                    <li>✅ Lecture de la documentation</li>
+                    <li>✅ Accès aux pages d'aide</li>
+                </ul>
+                
+                <h3 style="color: #F59E0B;">Nécessite une connexion:</h3>
+                <ul style="color: #64748B;">
+                    <li>🔒 Analyse d'images médicales</li>
+                    <li>🔒 Génération de rapports PDF</li>
+                    <li>🔒 Envoi de formulaires de contact</li>
+                </ul>
+            </div>
+            
+            <button class="button" onclick="window.location.reload()">
+                🔄 Vérifier la connexion
+            </button>
+            
+            <button class="button" onclick="history.back()">
+                ← Retour
+            </button>
+        </div>
+        
+        <script>
+            // Vérifier périodiquement la connexion
+            setInterval(() => {
+                if (navigator.onLine) {
+                    window.location.reload();
+                }
+            }, 5000);
+        </script>
+    </body>
+    </html>
+    
