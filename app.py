@@ -62,9 +62,9 @@ st.markdown("""
     .stApp {
         font-family: 'Inter', sans-serif;
         /* background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); */
-        /* background-color: #E6F0FA; */
+        background-color: #E6F0FA; 
         /* background: linear-gradient(135deg, #E6F0FA, #E6FAF0); */
-        background: linear-gradient(135deg, #667eea 0%, #87CEEB, #E6F0FA);
+        /* background: linear-gradient(135deg, #667eea 0%, #87CEEB, #E6F0FA); */
         min-height: 100vh;
     }
     
