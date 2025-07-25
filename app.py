@@ -707,13 +707,13 @@ def main():
                         display_diagnostic_gauge(predicted_class, confidence)
                         
                         # Détails des probabilités
-                        st.markdown("### 📊 Détail des probabilités")
-                        for i, (class_name, prob) in enumerate(zip(classes, probabilities)):
-                            prob_percent = prob * 100
-                            if i == max_prob_idx:
-                                st.markdown(f"**{class_name}**: {prob_percent:.1f}% 🎯")
-                            else:
-                                st.markdown(f"{class_name}: {prob_percent:.1f}%")
+                        #st.markdown("### 📊 Détail des probabilités")
+                        #for i, (class_name, prob) in enumerate(zip(classes, probabilities)):
+                        #    prob_percent = prob * 100
+                        #    if i == max_prob_idx:
+                        #        st.markdown(f"**{class_name}**: {prob_percent:.1f}% 🎯")
+                        #    else:
+                        #        st.markdown(f"{class_name}: {prob_percent:.1f}%")
                         
                         # Sauvegarde dans l'historique
                         if 'history' not in st.session_state:
