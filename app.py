@@ -417,17 +417,19 @@ class MedicalAIModel:
         self.model = None
         self.classes = ["Normal", "Précancéreux", "Cancéreux"]
         self.model_path = "ResNet50V2_3.keras"
+        self.download_url = "https://drive.google.com/file/d/1DYODiPs8vBCRuxUBti8oOK7_HJBkeFJ6/view?usp=drive_link"
         self.load_model()
     
     def load_model(self):
         """Charge le modèle de prédiction"""
-        try:
-            if os.path.exists(self.model_path):
-                self.model = keras.models.load_model(self.model_path)
-                st.success("✅ Modèle IA chargé avec succès")
-            else:
-                st.warning("⚠️ Modèle non trouvé, utilisation du mode démonstration")
-                self.model = None
+         try:
+            if not os.path.exists(self.model_path):
+                st.info("⬇️ Téléchargement du modèle...")
+                urllib.request.urlretrieve(self.download_url, self.model_path)
+                st.success("✅ Modèle téléchargé.")
+            
+            self.model = keras.models.load_model(self.model_path)
+            st.success("✅ Modèle IA chargé avec succès")
         except Exception as e:
             st.error(f"❌ Erreur lors du chargement du modèle: {e}")
             self.model = None
