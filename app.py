@@ -422,7 +422,7 @@ class MedicalAIModel:
     
     def load_model(self):
         """Charge le modèle de prédiction"""
-         try:
+        try:
             if not os.path.exists(self.model_path):
                 st.info("⬇️ Téléchargement du modèle...")
                 urllib.request.urlretrieve(self.download_url, self.model_path)
