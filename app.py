@@ -7,8 +7,13 @@ import time
 import os
 import tempfile
 import hashlib
-import tensorflow as tf
-from tensorflow import keras
+try:
+    import tensorflow as tf
+    from tensorflow import keras
+    TF_AVAILABLE = True
+except ImportError:
+    TF_AVAILABLE = False
+    print("TensorFlow non disponible")
 import gc
 from datetime import datetime
 import json
@@ -17,6 +22,7 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image as RL
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.lib import colors
+import cv2
 
 # Import du module PWA
 try:
@@ -25,10 +31,10 @@ try:
 except ImportError:
     PWA_AVAILABLE = False
     print("Module PWA non disponible")
-
+    
 # Configuration de la page
 st.set_page_config(
-    page_title="SamaSanté  - DIA",
+    page_title="SamaSanté - Diagnostic IA",
     page_icon="🏥",
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -62,9 +68,9 @@ st.markdown("""
     .stApp {
         font-family: 'Inter', sans-serif;
         /* background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); */
-        background-color: #E6F0FA; 
-        /* background: linear-gradient(135deg, #E6F0FA, #E6FAF0); */
-        /* background: linear-gradient(135deg, #667eea 0%, #87CEEB, #E6F0FA); */
+        /* background-color: #E6F0FA; */
+        background: linear-gradient(135deg, #E6F0FA, #E6FAF0); 
+        /*background: linear-gradient(135deg, #667eea 0%, #87CEEB, #E6F0FA);*/
         min-height: 100vh;
     }
     
@@ -103,24 +109,6 @@ st.markdown("""
         font-size: 24px;
         font-weight: 700;
         color: var(--text-dark);
-    }
-    
-    .nav-links {
-        display: flex;
-        gap: 2rem;
-        align-items: center;
-    }
-    
-    .nav-link {
-        color: var(--text-gray);
-        text-decoration: none;
-        font-weight: 500;
-        transition: color 0.3s ease;
-        cursor: pointer;
-    }
-    
-    .nav-link:hover {
-        color: var(--primary-blue);
     }
     
     /* Hero section */
@@ -191,56 +179,51 @@ st.markdown("""
         margin-top: 2rem;
     }
     
-    /* Jauge de diagnostic */
-    .diagnostic-gauge {
-        display: flex;
-        align-items: center;
-        justify-content: center;
+    /* Affichage des résultats sans jauge */
+    .result-display {
+        text-align: center;
+        padding: 2rem;
+        border-radius: 12px;
         margin: 2rem 0;
     }
     
-    .gauge-container {
-        position: relative;
-        width: 200px;
-        height: 200px;
+    .result-normal {
+        background: linear-gradient(135deg, #DCFCE7, #BBF7D0);
+        border: 2px solid var(--success-green);
+        color: #065F46;
     }
     
-    .gauge-bg {
-        width: 100%;
-        height: 100%;
-        border-radius: 50%;
-        background: conic-gradient(
-            var(--success-green) 0deg 120deg,
-            var(--warning-orange) 120deg 240deg,
-            var(--danger-red) 240deg 360deg
-        );
-        display: flex;
-        align-items: center;
-        justify-content: center;
+    .result-precancer {
+        background: linear-gradient(135deg, #FEF3C7, #FDE68A);
+        border: 2px solid var(--warning-orange);
+        color: #92400E;
     }
     
-    .gauge-inner {
-        width: 80%;
-        height: 80%;
-        background: white;
-        border-radius: 50%;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    .result-cancer {
+        background: linear-gradient(135deg, #FEE2E2, #FECACA);
+        border: 2px solid var(--danger-red);
+        color: #991B1B;
     }
     
-    .gauge-value {
+    .result-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+    }
+    
+    .result-title {
         font-size: 2rem;
         font-weight: bold;
-        color: var(--text-dark);
+        margin-bottom: 1rem;
     }
     
-    .gauge-label {
-        font-size: 0.9rem;
-        color: var(--text-gray);
-        margin-top: 0.5rem;
+    .result-description {
+        font-size: 1.1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .result-confidence {
+        font-size: 1rem;
+        opacity: 0.8;
     }
     
     /* Boutons */
@@ -273,6 +256,14 @@ st.markdown("""
         background: #3730A3;
     }
     
+    .custom-button.danger {
+        background: var(--danger-red);
+    }
+    
+    .custom-button.danger:hover {
+        background: #DC2626;
+    }
+    
     /* Messages de sécurité */
     .security-notice {
         background: linear-gradient(135deg, #FEF3C7, #FDE68A);
@@ -296,6 +287,27 @@ st.markdown("""
         gap: 0.5rem;
     }
     
+    /* Historique */
+    .history-item {
+        background: var(--white);
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .history-info {
+        flex-grow: 1;
+    }
+    
+    .history-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+    
     /* Responsive */
     @media (max-width: 768px) {
         .hero-section {
@@ -314,18 +326,11 @@ st.markdown("""
             gap: 1rem;
         }
         
-        .nav-links {
-            gap: 1rem;
-            flex-wrap: wrap;
-            justify-content: center;
+        .result-icon {
+            font-size: 3rem;
         }
         
-        .gauge-container {
-            width: 150px;
-            height: 150px;
-        }
-        
-        .gauge-value {
+        .result-title {
             font-size: 1.5rem;
         }
     }
@@ -416,26 +421,34 @@ class MedicalAIModel:
     def __init__(self):
         self.model = None
         self.classes = ["Normal", "Précancéreux", "Cancéreux"]
+        self.detailed_classes = [
+            'normal_columnar', 'normal_intermediate', 'normal_superficiel',
+            'light_dysplastic', 'moderate_dysplastic', 'severe_dysplastic',
+            'carcinoma_in_situ'
+        ]
         self.model_path = "ResNet50V2_3.keras"
-        self.download_url = "https://drive.google.com/file/d/1DYODiPs8vBCRuxUBti8oOK7_HJBkeFJ6/view?usp=drive_link"
         self.load_model()
     
     def load_model(self):
         """Charge le modèle de prédiction"""
         try:
-            if not os.path.exists(self.model_path):
-                st.info("⬇️ Téléchargement du modèle...")
-                urllib.request.urlretrieve(self.download_url, self.model_path)
-                st.success("✅ Modèle téléchargé.")
-            
-            self.model = keras.models.load_model(self.model_path)
-            st.success("✅ Modèle IA chargé avec succès")
+            if not TF_AVAILABLE:
+                st.warning("⚠️ TensorFlow non disponible, utilisation du mode démonstration")
+                self.model = None
+                return
+                
+            if os.path.exists(self.model_path):
+                self.model = keras.models.load_model(self.model_path)
+                st.success("✅ Modèle IA chargé avec succès")
+            else:
+                st.warning("⚠️ Modèle non trouvé, utilisation du mode démonstration")
+                self.model = None
         except Exception as e:
             st.error(f"❌ Erreur lors du chargement du modèle: {e}")
             self.model = None
     
     def preprocess_image(self, image):
-        """Prétraite l'image pour le modèle"""
+        """Prétraite l'image pour le modèle avec LAB et CLAHE"""
         # Redimensionne l'image à 224x224
         image = image.resize((224, 224))
         
@@ -445,6 +458,16 @@ class MedicalAIModel:
         
         # Convertit en array numpy
         image_array = np.array(image)
+        
+        # Conversion en espace LAB
+        lab_image = cv2.cvtColor(image_array, cv2.COLOR_RGB2LAB)
+        
+        # Application du CLAHE sur le canal L
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+        lab_image[:,:,0] = clahe.apply(lab_image[:,:,0])
+        
+        # Reconversion en RGB
+        image_array = cv2.cvtColor(lab_image, cv2.COLOR_LAB2RGB)
         
         # Normalise les valeurs des pixels
         image_array = image_array / 255.0
@@ -464,11 +487,14 @@ class MedicalAIModel:
                 predictions = self.model.predict(processed_image, verbose=0)
                 probabilities = predictions[0]
                 
-                # Mappage des 7 classes du modèle vers 3 classes simplifiées
-                # Supposons que les classes sont: [Normal, ASCUS, LSIL, HSIL, SCC, AGC, AIS]
-                normal_prob = probabilities[0]  # Normal
-                precancer_prob = probabilities[1] + probabilities[2]  # ASCUS + LSIL
-                cancer_prob = probabilities[3] + probabilities[4] + probabilities[5] + probabilities[6]  # HSIL + SCC + AGC + AIS
+                # Mappage des 7 classes vers 3 catégories
+                normal_indices = [0, 1, 2]  # normal_columnar, normal_intermediate, normal_superficiel
+                precancer_indices = [3, 4, 5]  # light_dysplastic, moderate_dysplastic, severe_dysplastic
+                cancer_indices = [6]  # carcinoma_in_situ
+                
+                normal_prob = sum(probabilities[i] for i in normal_indices)
+                precancer_prob = sum(probabilities[i] for i in precancer_indices)
+                cancer_prob = sum(probabilities[i] for i in cancer_indices)
                 
                 # Normalisation
                 total = normal_prob + precancer_prob + cancer_prob
@@ -476,22 +502,28 @@ class MedicalAIModel:
                     final_probs = [normal_prob/total, precancer_prob/total, cancer_prob/total]
                 else:
                     final_probs = [0.33, 0.33, 0.34]
+                
+                # Déterminer la classe détaillée prédite
+                predicted_class_idx = np.argmax(probabilities)
+                detailed_class = self.detailed_classes[predicted_class_idx]
+                
             else:
                 # Mode démonstration avec prédictions aléatoires
                 time.sleep(2)  # Simule le temps de traitement
                 final_probs = np.random.dirichlet([2, 1, 1])  # Biais vers normal
+                detailed_class = np.random.choice(self.detailed_classes)
             
-            return final_probs, self.classes
+            return final_probs, self.classes, detailed_class
             
         except Exception as e:
             st.error(f"Erreur lors de la prédiction: {e}")
-            return [0.33, 0.33, 0.34], self.classes
+            return [0.33, 0.33, 0.34], self.classes, "normal_columnar"
         finally:
             # Nettoyage mémoire
             gc.collect()
 
 # Fonction pour générer un PDF du diagnostic
-def generate_pdf_report(image, prediction_result, confidence, timestamp):
+def generate_pdf_report(image, prediction_result, confidence, timestamp, filename, detailed_class):
     """Génère un rapport PDF du diagnostic"""
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=letter)
@@ -512,7 +544,9 @@ def generate_pdf_report(image, prediction_result, confidence, timestamp):
     # Informations générales
     info_style = styles['Normal']
     story.append(Paragraph(f"<b>Date et heure:</b> {timestamp}", info_style))
+    story.append(Paragraph(f"<b>Nom du fichier:</b> {filename}", info_style))
     story.append(Paragraph(f"<b>Résultat:</b> {prediction_result}", info_style))
+    story.append(Paragraph(f"<b>Classe détaillée:</b> {detailed_class}", info_style))
     story.append(Paragraph(f"<b>Niveau de confiance:</b> {confidence:.1f}%", info_style))
     story.append(Spacer(1, 20))
     
@@ -535,26 +569,41 @@ def generate_pdf_report(image, prediction_result, confidence, timestamp):
     ))
     story.append(Spacer(1, 20))
     
+    # Recommandations selon la gravité
+    story.append(Paragraph("<b>Recommandations:</b>", styles['Heading2']))
+    if "Normal" in prediction_result:
+        recommendations = (
+            "• Continuer les examens de dépistage réguliers selon les recommandations médicales<br/>"
+            "• Maintenir un mode de vie sain<br/>"
+            "• Surveillance gynécologique de routine"
+        )
+    elif "Précancéreux" in prediction_result:
+        recommendations = (
+            "• <b>Consulter un gynécologue dans les plus brefs délais</b><br/>"
+            "• Effectuer des examens complémentaires (colposcopie, biopsie)<br/>"
+            "• Surveillance médicale renforcée<br/>"
+            "• Suivi régulier recommandé"
+        )
+    else:
+        recommendations = (
+            "• <b>Consultation médicale URGENTE requise</b><br/>"
+            "• Examens approfondis nécessaires<br/>"
+            "• Prise en charge spécialisée recommandée<br/>"
+            "• Ne pas retarder la consultation médicale"
+        )
+    
+    story.append(Paragraph(recommendations, styles['Normal']))
+    story.append(Spacer(1, 20))
+    
     # Informations sur la technologie
     story.append(Paragraph("<b>Technologie utilisée:</b>", styles['Heading2']))
     story.append(Paragraph(
-        "• Intelligence Artificielle basée sur un réseau de neurones convolutionnel<br/>"
+        "• Intelligence Artificielle basée sur ResNet50V2<br/>"
         "• Modèle entraîné sur des images cytologiques cervicales<br/>"
+        "• Prétraitement avancé avec conversion LAB et CLAHE<br/>"
         "• Analyse automatisée des caractéristiques cellulaires",
         styles['Normal']
     ))
-    story.append(Spacer(1, 20))
-    
-    # Recommandations
-    story.append(Paragraph("<b>Recommandations:</b>", styles['Heading2']))
-    if "Normal" in prediction_result:
-        recommendations = "• Continuer les examens de dépistage réguliers<br/>• Maintenir un mode de vie sain"
-    elif "Précancéreux" in prediction_result:
-        recommendations = "• Consulter un gynécologue dans les plus brefs délais<br/>• Effectuer des examens complémentaires<br/>• Surveillance médicale renforcée"
-    else:
-        recommendations = "• Consultation médicale URGENTE requise<br/>• Examens approfondis nécessaires<br/>• Prise en charge spécialisée recommandée"
-    
-    story.append(Paragraph(recommendations, styles['Normal']))
     
     doc.build(story)
     buffer.seek(0)
@@ -567,6 +616,10 @@ def init_components():
     file_manager = SecureFileManager()
     ai_model = MedicalAIModel()
     return file_manager, ai_model
+
+# Initialisation de l'historique dans la session
+if 'history' not in st.session_state:
+    st.session_state.history = []
 
 # Interface utilisateur
 def display_header():
@@ -603,60 +656,131 @@ def display_hero():
     </div>
     """, unsafe_allow_html=True)
 
-def display_diagnostic_gauge(prediction, confidence):
-    """Affiche la jauge de diagnostic"""
-    # Déterminer la couleur selon le diagnostic
+def display_result_without_gauge(prediction, confidence, detailed_class):
+    """Affiche le résultat sans jauge, avec couleurs selon la gravité"""
     if "Normal" in prediction:
-        color = "#10B981"  # Vert
+        css_class = "result-normal"
         icon = "✅"
-        gauge_rotation = 0  # Position dans la zone verte
+        title = "Cellules Normales"
+        description = "Les cellules analysées présentent des caractéristiques normales."
     elif "Précancéreux" in prediction:
-        color = "#F59E0B"  # Orange
+        css_class = "result-precancer"
         icon = "⚠️"
-        gauge_rotation = 120  # Position dans la zone orange
+        title = "Cellules Précancéreuses"
+        description = "Les cellules présentent des anomalies nécessitant une surveillance médicale."
     else:
-        color = "#EF4444"  # Rouge
+        css_class = "result-cancer"
         icon = "🚨"
-        gauge_rotation = 240  # Position dans la zone rouge
+        title = "Cellules Cancéreuses"
+        description = "Les cellules présentent des caractéristiques cancéreuses. Consultation urgente requise."
     
     st.markdown(f"""
-    <div class="diagnostic-gauge">
-        <div class="gauge-container">
-            <div class="gauge-bg">
-                <div class="gauge-inner">
-                    <div style="font-size: 2rem;">{icon}</div>
-                    <div class="gauge-value" style="color: {color};">{confidence:.0f}%</div>
-                    <div class="gauge-label">Confiance</div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div style="text-align: center; margin-top: 1rem;">
-        <h3 style="color: {color}; margin: 0;">{prediction}</h3>
-        <p style="color: var(--text-gray); margin: 0.5rem 0;">Niveau de confiance: {confidence:.1f}%</p>
+    <div class="result-display {css_class} fade-in">
+        <div class="result-icon">{icon}</div>
+        <div class="result-title">{title}</div>
+        <div class="result-description">{description}</div>
+        <div class="result-confidence">Classe détaillée: {detailed_class}</div>
+        <div class="result-confidence">Niveau de confiance: {confidence:.1f}%</div>
     </div>
     """, unsafe_allow_html=True)
 
+def display_recommendations(prediction):
+    """Affiche les recommandations selon la gravité"""
+    st.markdown("### 📋 Recommandations")
+    
+    if "Normal" in prediction:
+        st.success("""
+        **Cellules normales détectées :**
+        - Continuer les examens de dépistage réguliers selon les recommandations médicales
+        - Maintenir un mode de vie sain
+        - Surveillance gynécologique de routine
+        """)
+    elif "Précancéreux" in prediction:
+        st.warning("""
+        **Cellules précancéreuses détectées :**
+        - **Consulter un gynécologue dans les plus brefs délais**
+        - Effectuer des examens complémentaires (colposcopie, biopsie)
+        - Surveillance médicale renforcée
+        - Suivi régulier recommandé
+        """)
+    else:
+        st.error("""
+        **Cellules cancéreuses détectées :**
+        - **Consultation médicale URGENTE requise**
+        - Examens approfondis nécessaires
+        - Prise en charge spécialisée recommandée
+        - Ne pas retarder la consultation médicale
+        """)
+
+def display_history():
+    """Affiche l'historique des analyses"""
+    st.markdown("### 📊 Historique des analyses")
+    
+    if not st.session_state.history:
+        st.info("Aucune analyse dans l'historique.")
+        return
+    
+    # Bouton pour supprimer tout l'historique
+    col1, col2 = st.columns([1, 4])
+    with col1:
+        if st.button("🗑️ Tout supprimer", type="secondary"):
+            st.session_state.history = []
+            st.rerun()
+    
+    # Affichage des éléments de l'historique
+    for i, item in enumerate(reversed(st.session_state.history)):
+        with st.container():
+            col1, col2, col3, col4 = st.columns([3, 2, 1, 1])
+            
+            with col1:
+                st.write(f"**{item['filename']}**")
+                st.write(f"📅 {item['timestamp']}")
+                st.write(f"🔬 {item['result']} ({item['detailed_class']})")
+            
+            with col2:
+                st.write(f"**Confiance:** {item['confidence']:.1f}%")
+            
+            with col3:
+                # Bouton pour re-télécharger le PDF
+                pdf_buffer = generate_pdf_report(
+                    None, item['result'], item['confidence'], 
+                    item['timestamp'], item['filename'], item['detailed_class']
+                )
+                st.download_button(
+                    label="📄 PDF",
+                    data=pdf_buffer.getvalue(),
+                    file_name=f"diagnostic_{item['filename']}_{item['timestamp'].replace(':', '-').replace(' ', '_')}.pdf",
+                    mime="application/pdf",
+                    key=f"download_{len(st.session_state.history)-1-i}"
+                )
+            
+            with col4:
+                # Bouton pour supprimer cet élément
+                if st.button("🗑️", key=f"delete_{len(st.session_state.history)-1-i}"):
+                    st.session_state.history.pop(len(st.session_state.history)-1-i)
+                    st.rerun()
+            
+            st.divider()
+
+# Application principale
 def main():
-    """Fonction principale de l'application"""
+    display_header()
+    display_hero() 
+
     # Configuration PWA
     if PWA_AVAILABLE:
         setup_pwa()
     
-    # Initialisation
+    # Initialisation des composants
     file_manager, ai_model = init_components()
     
-    # Affichage de l'interface
-    display_header()
-    display_hero()
-    
-    # Navigation par onglets
+    # Onglets de navigation
     tab1, tab2, tab3, tab4 = st.tabs(["🔬 Analyse", "📋 Historique", "ℹ️ À propos", "📞 Contact"])
     
     with tab1:
-        st.markdown("## 📸 Analyse d'Image Médicale")
-        
-        # Messages de sécurité
+        st.markdown("### 📤 Charger une image cytologique")
+
+         # Messages de sécurité
         st.markdown("""
         <div class="security-notice">
             <span>🛡️</span>
@@ -666,9 +790,9 @@ def main():
         
         # Zone d'upload
         uploaded_file = st.file_uploader(
-            "Choisissez une image cytologique du col de l'utérus",
+            "Choisissez une image cytologique",
             type=['png', 'jpg', 'jpeg', 'bmp'],
-            help="Formats acceptés: PNG, JPG, JPEG, BMP. Taille maximale: 10MB"
+            help="Formats acceptés: PNG, JPG, JPEG, BMP (max 10MB)"
         )
         
         if uploaded_file is not None:
@@ -680,107 +804,91 @@ def main():
                 return
             
             # Affichage de l'image
-            col1, col2 = st.columns([1, 1])
+            image = Image.open(uploaded_file)
+            
+            col1, col2 = st.columns(2)
             
             with col1:
-                image = Image.open(uploaded_file)
-                st.image(image, caption="Image chargée", use_container_width=True)
-                
-                # Informations sur l'image
-                st.markdown("### 📊 Informations")
-                st.write(f"**Nom:** {uploaded_file.name}")
-                st.write(f"**Taille:** {image.size}")
-                st.write(f"**Mode:** {image.mode}")
-                st.write(f"**Taille fichier:** {len(uploaded_file.getvalue())} bytes")
+                st.markdown("#### 🖼️ Image chargée")
+                st.image(image, caption=uploaded_file.name, use_column_width=True)
             
             with col2:
-                # Bouton d'analyse
-                if st.button("🔬 Analyser l'image", type="primary", use_container_width=True):
-                    with st.spinner("🔄 Analyse en cours... Veuillez patienter."):
-                        # Analyse avec le modèle IA
-                        probabilities, classes = ai_model.predict(image)
-                        
-                        # Résultats
-                        max_prob_idx = np.argmax(probabilities)
-                        predicted_class = classes[max_prob_idx]
-                        confidence = probabilities[max_prob_idx] * 100
-                        
-                        # Affichage de la jauge
-                        display_diagnostic_gauge(predicted_class, confidence)
-                        
-                        # Détails des probabilités
-                        #st.markdown("### 📊 Détail des probabilités")
-                        #for i, (class_name, prob) in enumerate(zip(classes, probabilities)):
-                        #    prob_percent = prob * 100
-                        #    if i == max_prob_idx:
-                        #        st.markdown(f"**{class_name}**: {prob_percent:.1f}% 🎯")
-                        #    else:
-                        #        st.markdown(f"{class_name}: {prob_percent:.1f}%")
-                        
-                        # Sauvegarde dans l'historique
-                        if 'history' not in st.session_state:
-                            st.session_state.history = []
-                        
-                        result = {
-                            'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                            'diagnosis': predicted_class,
-                            'confidence': confidence,
-                            'image_name': uploaded_file.name
-                        }
-                        st.session_state.history.append(result)
-                        
-                        # Boutons d'action
-                        col_btn1, col_btn2, col_btn3 = st.columns(3)
-                        
-                        with col_btn1:
-                            # Génération du PDF
-                            pdf_buffer = generate_pdf_report(
-                                image, predicted_class, confidence, result['timestamp']
-                            )
-                            st.download_button(
-                                label="📄 Télécharger PDF",
-                                data=pdf_buffer.getvalue(),
-                                file_name=f"diagnostic_{result['timestamp'].replace(':', '-')}.pdf",
-                                mime="application/pdf",
-                                use_container_width=True
-                            )
-                        
-                        with col_btn2:
-                            if st.button("💾 Sauvegarder", use_container_width=True):
-                                st.success("✅ Résultat sauvegardé dans l'historique!")
-                        
-                        with col_btn3:
-                            if st.button("🔄 Nouvelle analyse", use_container_width=True):
-                                st.rerun()
+                st.markdown("#### 🔬 Analyse en cours...")
                 
-                # Message de prévention
-                st.markdown("---")
-                st.warning("""
-                ⚠️ **Important**: Ce diagnostic automatisé est un outil d'aide à la décision. 
-                Il ne remplace pas l'avis d'un professionnel de santé qualifié. 
-                Consultez toujours un médecin pour un diagnostic définitif.
-                """)
+                # Barre de progression
+                progress_bar = st.progress(0)
+                status_text = st.empty()
+                
+                # Simulation du traitement
+                for i in range(100):
+                    progress_bar.progress(i + 1)
+                    if i < 30:
+                        status_text.text("Prétraitement de l'image...")
+                    elif i < 70:
+                        status_text.text("Analyse par IA...")
+                    else:
+                        status_text.text("Génération du rapport...")
+                    time.sleep(0.02)
+                
+                # Prédiction
+                probabilities, classes, detailed_class = ai_model.predict(image)
+                
+                # Détermination du résultat
+                max_prob_idx = np.argmax(probabilities)
+                prediction_result = classes[max_prob_idx]
+                confidence = probabilities[max_prob_idx] * 100
+                
+                # Effacer la barre de progression
+                progress_bar.empty()
+                status_text.empty()
+                
+                st.success("✅ Analyse terminée!")
+            
+                # Affichage des résultats sans jauge
+                display_result_without_gauge(prediction_result, confidence, detailed_class)
+                
+            # Affichage des recommandations
+            display_recommendations(prediction_result)
+            
+            # Génération du PDF et ajout à l'historique
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            
+            col1, col2, col3 = st.columns(3)
+            
+            with col1:
+                # Bouton de téléchargement PDF
+                pdf_buffer = generate_pdf_report(
+                    image, prediction_result, confidence, timestamp, 
+                    uploaded_file.name, detailed_class
+                )
+                
+                st.download_button(
+                    label="📄 Télécharger le rapport PDF",
+                    data=pdf_buffer.getvalue(),
+                    file_name=f"diagnostic_{uploaded_file.name}_{timestamp.replace(':', '-').replace(' ', '_')}.pdf",
+                    mime="application/pdf",
+                    type="primary"
+                )
+            
+            with col2:
+                # Bouton pour ajouter à l'historique
+                if st.button("💾 Ajouter à l'historique", type="secondary"):
+                    history_item = {
+                        'filename': uploaded_file.name,
+                        'timestamp': timestamp,
+                        'result': prediction_result,
+                        'detailed_class': detailed_class,
+                        'confidence': confidence
+                    }
+                    st.session_state.history.append(history_item)
+                    st.success("✅ Ajouté à l'historique!")
+            
+            with col3: 
+                if st.button("🔄 Nouvelle analyse", use_container_width=True):
+                    st.rerun()
     
     with tab2:
-        st.markdown("## 📋 Historique des Analyses")
-        
-        if 'history' in st.session_state and st.session_state.history:
-            for i, result in enumerate(reversed(st.session_state.history)):
-                with st.expander(f"Analyse {len(st.session_state.history) - i} - {result['timestamp']}"):
-                    col1, col2, col3 = st.columns(3)
-                    with col1:
-                        st.write(f"**Image:** {result['image_name']}")
-                    with col2:
-                        st.write(f"**Diagnostic:** {result['diagnosis']}")
-                    with col3:
-                        st.write(f"**Confiance:** {result['confidence']:.1f}%")
-            
-            if st.button("🗑️ Effacer l'historique"):
-                st.session_state.history = []
-                st.success("Historique effacé")
-                st.rerun()
-        else:
-            st.info("📝 Aucune analyse dans l'historique")
+        display_history()
     
     with tab3:
         st.markdown('<div id="about-section"></div>', unsafe_allow_html=True)
@@ -924,13 +1032,6 @@ def main():
                 </a>
             </div>
             """, unsafe_allow_html=True)
-        
-    
-    # Nettoyage automatique à la fin
-    try:
-        file_manager.cleanup()
-    except:
-        pass
 
 if __name__ == "__main__":
     main()
