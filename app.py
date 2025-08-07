@@ -727,14 +727,14 @@ def display_history():
     # Affichage des éléments de l'historique
     for i, item in enumerate(reversed(st.session_state.history)):
         with st.container():
-            col1, col3, col4 = st.columns([3, 2, 1, 1])
+            col1, col2, col3 = st.columns([3, 1, 1])
             
             with col1:
                 st.write(f"**{item['filename']}**")
                 st.write(f"📅 {item['timestamp']}")
                 st.write(f"🔬 {item['result']} ")
             
-            with col3:
+            with col2:
                 # Bouton pour re-télécharger le PDF
                 pdf_buffer = generate_pdf_report(
                     None, item['result'], item['confidence'], 
@@ -748,7 +748,7 @@ def display_history():
                     key=f"download_{len(st.session_state.history)-1-i}"
                 )
             
-            with col4:
+            with col3:
                 # Bouton pour supprimer cet élément
                 if st.button("🗑️", key=f"delete_{len(st.session_state.history)-1-i}"):
                     st.session_state.history.pop(len(st.session_state.history)-1-i)
