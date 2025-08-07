@@ -546,8 +546,6 @@ def generate_pdf_report(image, prediction_result, confidence, timestamp, filenam
     story.append(Paragraph(f"<b>Date et heure:</b> {timestamp}", info_style))
     story.append(Paragraph(f"<b>Nom du fichier:</b> {filename}", info_style))
     story.append(Paragraph(f"<b>Résultat:</b> {prediction_result}", info_style))
-    story.append(Paragraph(f"<b>Classe détaillée:</b> {detailed_class}", info_style))
-    story.append(Paragraph(f"<b>Niveau de confiance:</b> {confidence:.1f}%", info_style))
     story.append(Spacer(1, 20))
     
     # Avertissement médical
@@ -680,7 +678,6 @@ def display_result_without_gauge(prediction, confidence, detailed_class):
         <div class="result-title">{title}</div>
         <div class="result-description">{description}</div>
         <div class="result-confidence">Classe détaillée: {detailed_class}</div>
-        <div class="result-confidence">Niveau de confiance: {confidence:.1f}%</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -730,15 +727,12 @@ def display_history():
     # Affichage des éléments de l'historique
     for i, item in enumerate(reversed(st.session_state.history)):
         with st.container():
-            col1, col2, col3, col4 = st.columns([3, 2, 1, 1])
+            col1, col3, col4 = st.columns([3, 2, 1, 1])
             
             with col1:
                 st.write(f"**{item['filename']}**")
                 st.write(f"📅 {item['timestamp']}")
-                st.write(f"🔬 {item['result']} ({item['detailed_class']})")
-            
-            with col2:
-                st.write(f"**Confiance:** {item['confidence']:.1f}%")
+                st.write(f"🔬 {item['result']} ")
             
             with col3:
                 # Bouton pour re-télécharger le PDF
@@ -940,10 +934,6 @@ def main():
             - Traitement en temps réel
             - Interface responsive
             
-            **📊 Résultats détaillés**
-            - Jauge de diagnostic visuelle
-            - Scores de confiance
-            - Probabilités détaillées
             
             **📄 Rapports PDF**
             - Génération automatique
