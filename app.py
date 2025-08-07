@@ -477,50 +477,60 @@ class MedicalAIModel:
         
         return image_array
     
-    def predict(self, image):
+   def predict(self, image):
         """Fait une prédiction sur l'image"""
         try:
             processed_image = self.preprocess_image(image)
             
             if self.model is not None:
-                # Prédiction réelle avec le modèle
+                # Prédiction réelle
                 predictions = self.model.predict(processed_image, verbose=0)
                 probabilities = predictions[0]
-                
-                # Mappage des 7 classes vers 3 catégories
-                normal_indices = [0, 1, 2]  # normal_columnar, normal_intermediate, normal_superficiel
-                precancer_indices = [3, 4, 5]  # light_dysplastic, moderate_dysplastic, severe_dysplastic
-                cancer_indices = [6]  # carcinoma_in_situ
-                
-                normal_prob = sum(probabilities[i] for i in normal_indices)
-                precancer_prob = sum(probabilities[i] for i in precancer_indices)
-                cancer_prob = sum(probabilities[i] for i in cancer_indices)
-                
-                # Normalisation
-                total = normal_prob + precancer_prob + cancer_prob
-                if total > 0:
-                    final_probs = [normal_prob/total, precancer_prob/total, cancer_prob/total]
-                else:
-                    final_probs = [0.33, 0.33, 0.34]
-                
-                # Déterminer la classe détaillée prédite
+    
+                # Index de la classe détaillée la plus probable
                 predicted_class_idx = np.argmax(probabilities)
                 detailed_class = self.detailed_classes[predicted_class_idx]
-                
+    
+                # Mapping basé uniquement sur la classe détaillée prédite
+                if detailed_class in ['normal_columnar', 'normal_intermediate', 'normal_superficiel']:
+                    prediction_result = "Normal"
+                elif detailed_class in ['light_dysplastic', 'moderate_dysplastic', 'severe_dysplastic']:
+                    prediction_result = "Précancéreux"
+                else:
+                    prediction_result = "Cancéreux"
+    
+                # Facultatif : on garde les proba globales pour affichage UX
+                final_probs = {
+                    "Normal": sum(probabilities[i] for i in [0, 1, 2]),
+                    "Précancéreux": sum(probabilities[i] for i in [3, 4, 5]),
+                    "Cancéreux": probabilities[6]
+                }
+                total = sum(final_probs.values())
+                for k in final_probs:
+                    final_probs[k] = final_probs[k] / total if total > 0 else 1/3
+    
             else:
-                # Mode démonstration avec prédictions aléatoires
-                time.sleep(2)  # Simule le temps de traitement
-                final_probs = np.random.dirichlet([2, 1, 1])  # Biais vers normal
+                # Mode démonstration
+                time.sleep(2)
+                final_probs = {
+                    "Normal": np.random.uniform(0.4, 0.6),
+                    "Précancéreux": np.random.uniform(0.2, 0.4),
+                    "Cancéreux": np.random.uniform(0.1, 0.2),
+                }
+                total = sum(final_probs.values())
+                for k in final_probs:
+                    final_probs[k] = final_probs[k] / total
+                prediction_result = max(final_probs, key=final_probs.get)
                 detailed_class = np.random.choice(self.detailed_classes)
-            
-            return final_probs, self.classes, detailed_class
-            
+    
+            return list(final_probs.values()), self.classes, detailed_class
+    
         except Exception as e:
             st.error(f"Erreur lors de la prédiction: {e}")
             return [0.33, 0.33, 0.34], self.classes, "normal_columnar"
         finally:
-            # Nettoyage mémoire
             gc.collect()
+
 
 # Fonction pour générer un PDF du diagnostic
 def generate_pdf_report(image, prediction_result, confidence, timestamp, filename, detailed_class):
