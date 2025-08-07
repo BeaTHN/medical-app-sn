@@ -447,10 +447,10 @@ class MedicalAIModel:
                     with open(self.model_path, 'wb') as f:
                         f.write(response.content)
                     st.success("✅ Modèle téléchargé avec succès.")
+                    st.info(f"Taille du fichier téléchargé : {os.path.getsize(self.model_path)} octets")
                 else:
                     st.error("❌ Échec du téléchargement du modèle.")
-                    self.model = None
-                    return
+
         except Exception as e:
             st.error(f"❌ Erreur lors du chargement du modèle: {e}")
             self.model = None
