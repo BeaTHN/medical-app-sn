@@ -429,23 +429,8 @@ class MedicalAIModel:
         self.model_path = "ResNet50V2_3.keras"
         self.load_model()
 
-    import requests
-
-    def download_model_from_hf(url, output_path):
-        try:
-            with requests.get(url, stream=True) as r:
-                r.raise_for_status()
-                with open(output_path, 'wb') as f:
-                    for chunk in r.iter_content(chunk_size=8192):
-                        if chunk:
-                            f.write(chunk)
-            return True
-        except Exception as e:
-            st.error(f"Erreur lors du téléchargement : {e}")
-            return False
-
     
-    def load_model(self):
+     def load_model(self):
         """Charge le modèle de prédiction"""
         try:
             if not TF_AVAILABLE:
@@ -453,20 +438,12 @@ class MedicalAIModel:
                 self.model = None
                 return
                 
-            if not os.path.exists(self.model_path):
-                st.info("📥 Téléchargement du modèle depuis Hugging Face...")
-                import requests
-    
-                url = "https://huggingface.co/ursule4321/samasante/resolve/main/ssante.keras"
-                response = requests.get(url)
-                if response.status_code == 200:
-                    with open(self.model_path, 'wb') as f:
-                        f.write(response.content)
-                    st.success("✅ Modèle téléchargé avec succès.")
-                    st.info(f"Taille du fichier téléchargé : {os.path.getsize(self.model_path)} octets")
-                else:
-                    st.error("❌ Échec du téléchargement du modèle.")
-
+            if os.path.exists(self.model_path):
+                self.model = keras.models.load_model(self.model_path)
+                st.success("✅ Modèle IA chargé avec succès")
+            else:
+                st.warning("⚠️ Modèle non trouvé, utilisation du mode démonstration")
+                self.model = None
         except Exception as e:
             st.error(f"❌ Erreur lors du chargement du modèle: {e}")
             self.model = None
