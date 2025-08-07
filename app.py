@@ -428,6 +428,22 @@ class MedicalAIModel:
         ]
         self.model_path = "ResNet50V2_3.keras"
         self.load_model()
+
+    import requests
+
+    def download_model_from_hf(url, output_path):
+        try:
+            with requests.get(url, stream=True) as r:
+                r.raise_for_status()
+                with open(output_path, 'wb') as f:
+                    for chunk in r.iter_content(chunk_size=8192):
+                        if chunk:
+                            f.write(chunk)
+            return True
+        except Exception as e:
+            st.error(f"Erreur lors du téléchargement : {e}")
+            return False
+
     
     def load_model(self):
         """Charge le modèle de prédiction"""
