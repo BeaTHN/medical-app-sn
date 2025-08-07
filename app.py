@@ -437,12 +437,23 @@ class MedicalAIModel:
                 self.model = None
                 return
                 
-            if os.path.exists(self.model_path):
-                self.model = keras.models.load_model(self.model_path)
-                st.success("✅ Modèle IA chargé avec succès")
-            else:
-                st.warning("⚠️ Modèle non trouvé, utilisation du mode démonstration")
-                self.model = None
+            if not os.path.exists(self.model_path):
+                st.info("📥 Téléchargement du modèle depuis Google Drive...")
+                import requests
+    
+                # Remplace cette URL par ton lien direct Google Drive
+                file_id = "1op5m7WWP2TNTGTQB0KCJa1V0OJC60P4a"  
+                gdrive_url = f"https://drive.google.com/uc?export=download&id=1op5m7WWP2TNTGTQB0KCJa1V0OJC60P4a"
+    
+                response = requests.get(gdrive_url)
+                if response.status_code == 200:
+                    with open(self.model_path, 'wb') as f:
+                        f.write(response.content)
+                    st.success("✅ Modèle téléchargé avec succès.")
+                else:
+                    st.error("❌ Échec du téléchargement du modèle.")
+                    self.model = None
+                    return
         except Exception as e:
             st.error(f"❌ Erreur lors du chargement du modèle: {e}")
             self.model = None
