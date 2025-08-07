@@ -22,7 +22,7 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image as RL
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.lib import colors
-
+import cv2
 
 # Import du module PWA
 try:
@@ -428,9 +428,8 @@ class MedicalAIModel:
         ]
         self.model_path = "ResNet50V2_3.keras"
         self.load_model()
-
     
-     def load_model(self):
+    def load_model(self):
         """Charge le modèle de prédiction"""
         try:
             if not TF_AVAILABLE:
