@@ -477,7 +477,8 @@ class MedicalAIModel:
         
         return image_array
     
-   def predict(self, image):
+    
+    def predict(self, image):
         """Fait une prédiction sur l'image"""
         try:
             processed_image = self.preprocess_image(image)
@@ -524,7 +525,7 @@ class MedicalAIModel:
                 detailed_class = np.random.choice(self.detailed_classes)
     
             return list(final_probs.values()), self.classes, detailed_class
-    
+        
         except Exception as e:
             st.error(f"Erreur lors de la prédiction: {e}")
             return [0.33, 0.33, 0.34], self.classes, "normal_columnar"
