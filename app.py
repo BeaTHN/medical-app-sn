@@ -438,14 +438,11 @@ class MedicalAIModel:
                 return
                 
             if not os.path.exists(self.model_path):
-                st.info("📥 Téléchargement du modèle depuis Google Drive...")
+                st.info("📥 Téléchargement du modèle depuis Hugging Face...")
                 import requests
     
-                # Remplace cette URL par ton lien direct Google Drive
-                file_id = "1op5m7WWP2TNTGTQB0KCJa1V0OJC60P4a"  
-                gdrive_url = f"https://drive.google.com/uc?export=download&id=1op5m7WWP2TNTGTQB0KCJa1V0OJC60P4a"
-    
-                response = requests.get(gdrive_url)
+                url = "https://huggingface.co/ursule4321/samasante/resolve/main/ssante.keras"
+                response = requests.get(url)
                 if response.status_code == 200:
                     with open(self.model_path, 'wb') as f:
                         f.write(response.content)
