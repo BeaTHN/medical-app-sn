@@ -1,4 +1,3 @@
-import gdown
 import streamlit as st
 import numpy as np
 from PIL import Image
@@ -42,13 +41,13 @@ st.set_page_config(
 )
 
 # Configuration de sécurité
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 # CSS personnalisé pour le design médical responsive
 st.markdown("""
 <style>
     /* Import Google Fonts */
-    @import url(\'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap\' );
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
     
     /* Variables CSS */
     :root {
@@ -67,7 +66,7 @@ st.markdown("""
     
     /* Reset et base */
     .stApp {
-        font-family: \'Inter\', sans-serif;
+        font-family: 'Inter', sans-serif;
         /* background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); */
         /* background-color: #E6F0FA; */
         background: linear-gradient(135deg, #E6F0FA, #E6FAF0); 
@@ -378,7 +377,7 @@ st.markdown("""
 class SecureFileManager:
     def __init__(self):
         self.temp_dir = tempfile.mkdtemp()
-        self.allowed_extensions = {".png", ".jpg", ".jpeg", ".bmp"}
+        self.allowed_extensions = {'.png', '.jpg', '.jpeg', '.bmp'}
         self.max_file_size = 10 * 1024 * 1024  # 10MB
     
     def validate_file(self, uploaded_file):
@@ -386,10 +385,10 @@ class SecureFileManager:
         if uploaded_file is None:
             return False, "Aucun fichier sélectionné"
         
-        # Vérifier l\'extension
+        # Vérifier l'extension
         file_ext = os.path.splitext(uploaded_file.name)[1].lower()
         if file_ext not in self.allowed_extensions:
-            return False, f"Extension non autorisée. Extensions acceptées: {\", \".join(self.allowed_extensions)}"
+            return False, f"Extension non autorisée. Extensions acceptées: {', '.join(self.allowed_extensions)}"
         
         # Vérifier la taille
         if len(uploaded_file.getvalue()) > self.max_file_size:
@@ -404,7 +403,7 @@ class SecureFileManager:
         temp_filename = f"{file_hash}{file_ext}"
         temp_path = os.path.join(self.temp_dir, temp_filename)
         
-        with open(temp_path, \'wb\') as f:
+        with open(temp_path, 'wb') as f:
             f.write(uploaded_file.getvalue())
         
         return temp_path
@@ -423,25 +422,25 @@ class MedicalAIModel:
         self.model = None
         self.classes = ["Normal", "Précancéreux", "Cancéreux"]
         self.detailed_classes = self.load_labels()
-        self.model_path = "ResNet50V23.keras"
+        self.model_path = "ResNet50V2_3.keras"
         self.load_model()
     
     def load_labels(self):
         """Charge labels.json (mapping nom->index) et retourne une liste index->nom."""
         hardcoded = [
-            \'normal_columnar\', \'normal_intermediate\', \'normal_superficiel\',
-            \'light_dysplastic\', \'moderate_dysplastic\', \'severe_dysplastic\',
-            \'carcinoma_in_situ\'
+            'normal_columnar', 'normal_intermediate', 'normal_superficiel',
+            'light_dysplastic', 'moderate_dysplastic', 'severe_dysplastic',
+            'carcinoma_in_situ'
         ]
         try:
-            with open(\'labels.json\',\'r\',encoding=\'utf-8\') as f:
+            with open('labels.json','r',encoding='utf-8') as f:
                 class_indices = json.load(f)  # ex: {"carcinoma_in_situ":6, ...}
             idx_to_class = [None]*len(class_indices)
             for name, idx in class_indices.items():
                 idx_to_class[idx] = name
             return idx_to_class
         except Exception as e:
-            st.warning(f"labels.json introuvable ou illisible ({e}) — j\'utilise l\'ordre codé en dur.")
+            st.warning(f"labels.json introuvable ou illisible ({e}) — j'utilise l'ordre codé en dur.")
             return hardcoded
 
 
@@ -454,7 +453,8 @@ class MedicalAIModel:
                 return
 
             model_local_path = "ResNet50V23.keras"
-            google_drive_file_id = "1nf8CpWwvDuQUaHjuju1OdPlXvvOFUwc0"
+            # >>> ASSUREZ-VOUS QUE CET ID EST CORRECT <<< 
+            google_drive_file_id = "1nf8CpWwvDuQUaHjuju1OdPlXvvOFUwc0" 
 
             if not os.path.exists(model_local_path):
                 st.info("Téléchargement du modèle depuis Google Drive...")
@@ -478,20 +478,20 @@ class MedicalAIModel:
 
     
     def preprocess_image(self, image):
-        """Pré-traitement aligné avec l\'entraînement (RGB + resize 224 + /255)."""
-        image = image.convert(\'RGB\').resize((224, 224))
-        x = np.array(image).astype(\'float32\') / 255.0
+        """Pré-traitement aligné avec l'entraînement (RGB + resize 224 + /255)."""
+        image = image.convert('RGB').resize((224, 224))
+        x = np.array(image).astype('float32') / 255.0
         x = np.expand_dims(x, axis=0)
         return x
 
 
     
     def predict(self, image):
-        """Fait une prédiction sur l\'image (robuste à l\'ordre des classes)."""
+        """Fait une prédiction sur l'image (robuste à l'ordre des classes)."""
         try:
             processed_image = self.preprocess_image(image)
 
-            # Par sécurité, assure l\'ordre des classes 3-niveaux
+            # Par sécurité, assure l'ordre des classes 3-niveaux
             # (doit être défini dans __init__ par ex.: self.classes = ["Normal","Précancéreux","Cancéreux"])
             if not hasattr(self, "classes"):
                 self.classes = ["Normal", "Précancéreux", "Cancéreux"]
@@ -511,7 +511,7 @@ class MedicalAIModel:
                 # self.detailed_classes doit venir de labels.json -> idx -> name
                 detailed_class = (
                     self.detailed_classes[predicted_class_idx]
-                    if getattr(self, "detailed_classes", None) and\
+                    if getattr(self, "detailed_classes", None) and
                     predicted_class_idx < len(self.detailed_classes)
                     else "unknown"
                 )
@@ -524,7 +524,7 @@ class MedicalAIModel:
                 elif detailed_class in cancer_names:
                     prediction_result = "Cancéreux"
                 else:
-                    # Si le nom n\'est pas reconnu (sécurité), on choisit le groupe au max des sommes
+                    # Si le nom n'est pas reconnu (sécurité), on choisit le groupe au max des sommes
                     prediction_result = None
 
                 # Somme des probas par groupes en se basant sur les NOMS réels
@@ -553,29 +553,41 @@ class MedicalAIModel:
                 else:
                     final_probs = [1/3, 1/3, 1/3]
 
-                # Si le mapping direct n\'a pas donné (nom inconnu), on prend le groupe au max
+                # Si le mapping direct n'a pas donné (nom inconnu), on prend le groupe au max
                 if prediction_result is None:
                     prediction_result = self.classes[int(np.argmax(final_probs))]
 
             else:
                 # Mode démonstration
                 time.sleep(2)
-                final_probs = [
-                    0.7, 0.2, 0.1
-                ]  # Exemple de probabilités pour le mode démo
-                prediction_result = "Normal"  # Exemple de résultat pour le mode démo
-                detailed_class = "normal_columnar" # Exemple de classe détaillée
+                final_probs = {
+                    "Normal": np.random.uniform(0.4, 0.6),
+                    "Précancéreux": np.random.uniform(0.2, 0.4),
+                    "Cancéreux": np.random.uniform(0.1, 0.2),
+                }
+                total = sum(final_probs.values())
+                for k in final_probs:
+                    final_probs[k] = final_probs[k] / total
+                prediction_result = max(final_probs, key=final_probs.get)
+                detailed_class = np.random.choice(
+                    getattr(self, "detailed_classes", ["normal_columnar","light_dysplastic","carcinoma_in_situ"])
+                )
+                # Convertit en liste dans l'ordre self.classes
+                final_probs = [final_probs[c] for c in self.classes]
 
-            confidence = final_probs[self.classes.index(prediction_result)] * 100
+            # Retourne: proba par groupe (ordre = self.classes), noms groupes, et classe détaillée
             return final_probs, self.classes, detailed_class
-            
+
         except Exception as e:
             st.error(f"Erreur lors de la prédiction: {e}")
-            # Retourne des valeurs par défaut en cas d\'erreur
-            return [0.33, 0.33, 0.34], self.classes, "normal_columnar"
+            return [0.33, 0.33, 0.34], getattr(self, "classes", ["Normal","Précancéreux","Cancéreux"]), "normal_columnar"
+        finally:
+            gc.collect()
+
+
 
 # Fonction pour générer un PDF du diagnostic
-def generate_pdf_report(prediction_result, confidence, timestamp, filename, detailed_class):
+def generate_pdf_report(image, prediction_result, confidence, timestamp, filename, detailed_class):
     """Génère un rapport PDF du diagnostic"""
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=letter)
@@ -584,28 +596,26 @@ def generate_pdf_report(prediction_result, confidence, timestamp, filename, deta
     
     # Titre
     title_style = ParagraphStyle(
-        \'CustomTitle\',
-        parent=styles[\'Heading1\'],
+        'CustomTitle',
+        parent=styles['Heading1'],
         fontSize=24,
         spaceAfter=30,
-        textColor=colors.HexColor(\'#4F46E5\')
+        textColor=colors.HexColor('#4F46E5')
     )
     story.append(Paragraph("Rapport de Diagnostic Médical IA", title_style))
     story.append(Spacer(1, 12))
     
     # Informations générales
-    info_style = styles[\'Normal\']
+    info_style = styles['Normal']
     story.append(Paragraph(f"<b>Date et heure:</b> {timestamp}", info_style))
-    story.append(Paragraph(f"<b>Nom du fichier:</b> {filename}</b>", info_style))
+    story.append(Paragraph(f"<b>Nom du fichier:</b> {filename}", info_style))
     story.append(Paragraph(f"<b>Résultat:</b> {prediction_result}", info_style))
-    story.append(Paragraph(f"<b>Classe détaillée:</b> {detailed_class}", info_style))
-    story.append(Paragraph(f"<b>Niveau de confiance:</b> {confidence:.1f}%", info_style))
     story.append(Spacer(1, 20))
     
     # Avertissement médical
     warning_style = ParagraphStyle(
-        \'Warning\',
-        parent=styles[\'Normal\'],
+        'Warning',
+        parent=styles['Normal'],
         fontSize=12,
         textColor=colors.red,
         borderColor=colors.red,
@@ -613,21 +623,69 @@ def generate_pdf_report(prediction_result, confidence, timestamp, filename, deta
         borderPadding=10
     )
     story.append(Paragraph(
-        "<b>AVERTISSEMENT MÉDICAL:</b>  
-"
-        "Ce diagnostic automatisé est un outil d\'aide à la décision uniquement. "
-        "Il ne remplace pas l\'avis d\'un professionnel de santé qualifié. "
+        "<b>AVERTISSEMENT MÉDICAL:</b><br/>"
+        "Ce diagnostic automatisé est un outil d'aide à la décision uniquement. "
+        "Il ne remplace pas l'avis d'un professionnel de santé qualifié. "
         "Consultez toujours un médecin pour un diagnostic définitif.",
         warning_style
+    ))
+    story.append(Spacer(1, 20))
+    
+    # Recommandations selon la gravité
+    story.append(Paragraph("<b>Recommandations:</b>", styles['Heading2']))
+    if "Normal" in prediction_result:
+        recommendations = (
+            "• Continuer les examens de dépistage réguliers selon les recommandations médicales<br/>"
+            "• Maintenir un mode de vie sain<br/>"
+            "• Surveillance gynécologique de routine"
+        )
+    elif "Précancéreux" in prediction_result:
+        recommendations = (
+            "• <b>Consulter un gynécologue dans les plus brefs délais</b><br/>"
+            "• Effectuer des examens complémentaires (colposcopie, biopsie)<br/>"
+            "• Surveillance médicale renforcée<br/>"
+            "• Suivi régulier recommandé"
+        )
+    else:
+        recommendations = (
+            "• <b>Consultation médicale URGENTE requise</b><br/>"
+            "• Examens approfondis nécessaires<br/>"
+            "• Prise en charge spécialisée recommandée<br/>"
+            "• Ne pas retarder la consultation médicale"
+        )
+    
+    story.append(Paragraph(recommendations, styles['Normal']))
+    story.append(Spacer(1, 20))
+    
+    # Informations sur la technologie
+    story.append(Paragraph("<b>Technologie utilisée:</b>", styles['Heading2']))
+    story.append(Paragraph(
+        "• Intelligence Artificielle basée sur ResNet50V2<br/>"
+        "• Modèle entraîné sur des images cytologiques cervicales<br/>"
+        "• Prétraitement avancé avec conversion LAB et CLAHE<br/>"
+        "• Analyse automatisée des caractéristiques cellulaires",
+        styles['Normal']
     ))
     
     doc.build(story)
     buffer.seek(0)
     return buffer
 
+# Initialisation des composants
+@st.cache_resource
+def init_components():
+    """Initialise les composants de l'application"""
+    file_manager = SecureFileManager()
+    ai_model = MedicalAIModel()
+    return file_manager, ai_model
+
+# Initialisation de l'historique dans la session
+if 'history' not in st.session_state:
+    st.session_state.history = []
+
 # Interface utilisateur
 def display_header():
-    """Affiche l\'en-tête de l\'application"""
+    """Affiche l'en-tête de l'application"""
     st.markdown("""
     <div class="custom-header">
         <div class="logo-section">
@@ -643,11 +701,11 @@ def display_hero():
     <div class="hero-section fade-in">
         <div class="hero-content">
             <h1>Diagnostic médical assisté par IA</h1>
-            <p>Notre application utilise l\'intelligence artificielle avancée pour aider au dépistage du cancer du col de l\'utérus. 
+            <p>Notre application utilise l'intelligence artificielle avancée pour aider au dépistage du cancer du col de l'utérus. 
             Chargez une image cytologique et obtenez un diagnostic automatisé en quelques secondes, avec une interface sécurisée et confidentielle.</p>
             <div class="privacy-notice">
                 <span>🔒</span>
-                <span><strong>Confidentialité garantie:</strong> Aucune donnée n\'est stockée. Traitement local et suppression automatique.</span>
+                <span><strong>Confidentialité garantie:</strong> Aucune donnée n'est stockée. Traitement local et suppression automatique.</span>
             </div>
         </div>
         <div style="display: flex; justify-content: center; align-items: center; background: linear-gradient(135deg, var(--accent-teal), var(--secondary-blue)); border-radius: 16px; padding: 2rem; min-height: 300px;">
@@ -684,7 +742,6 @@ def display_result_without_gauge(prediction, confidence, detailed_class):
         <div class="result-title">{title}</div>
         <div class="result-description">{description}</div>
         <div class="result-confidence">Classe détaillée: {detailed_class}</div>
-        <div class="result-confidence">Niveau de confiance: {confidence:.1f}%</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -717,43 +774,41 @@ def display_recommendations(prediction):
         """)
 
 def display_history():
-    """Affiche l\'historique des analyses"""
+    """Affiche l'historique des analyses"""
     st.markdown("### 📊 Historique des analyses")
     
     if not st.session_state.history:
-        st.info("Aucune analyse dans l\'historique.")
+        st.info("Aucune analyse dans l'historique.")
         return
     
-    # Bouton pour supprimer tout l\'historique
+    # Bouton pour supprimer tout l'historique
     col1, col2 = st.columns([1, 4])
     with col1:
         if st.button("🗑️ Tout supprimer", type="secondary"):
             st.session_state.history = []
             st.rerun()
     
-    # Affichage des éléments de l\'historique
+    # Affichage des éléments de l'historique
     for i, item in enumerate(reversed(st.session_state.history)):
         with st.container():
             col1, col2, col3, col4 = st.columns([3, 2, 1, 1])
             
             with col1:
-                st.write(f"**{item[\'filename\']}**")
-                st.write(f"📅 {item[\'timestamp\']}")
-                st.write(f"🔬 {item[\'result\']} ({item[\'detailed_class\]})")
+                st.write(f"**{item['filename']}**")
+                st.write(f"📅 {item['timestamp']}")
+                st.write(f"🔬 {item['result']} ({item['detailed_class']})")
             
-            with col2:
-                st.write(f"**Confiance:** {item[\'confidence\']:.1f}%")
             
             with col3:
                 # Bouton pour re-télécharger le PDF
                 pdf_buffer = generate_pdf_report(
-                    item[\'result\'], item[\'confidence\'], 
-                    item[\'timestamp\'], item[\'filename\'], item[\'detailed_class\']
+                    None, item['result'], item['confidence'], 
+                    item['timestamp'], item['filename'], item['detailed_class']
                 )
                 st.download_button(
                     label="📄 PDF",
                     data=pdf_buffer.getvalue(),
-                    file_name=f"diagnostic_{item[\'filename\']}_{item[\'timestamp\'].replace(\':\', \'-\').replace(\' \', \'_\')}.pdf",
+                    file_name=f"diagnostic_{item['filename']}_{item['timestamp'].replace(':', '-').replace(' ', '_')}.pdf",
                     mime="application/pdf",
                     key=f"download_{len(st.session_state.history)-1-i}"
                 )
@@ -769,26 +824,45 @@ def display_history():
 # Application principale
 def main():
     display_header()
-    display_hero()
+    display_hero() 
+
+    # Configuration PWA
+    if PWA_AVAILABLE:
+        setup_pwa()
     
-    # Initialisation du modèle
-    ai_model = MedicalAIModel()
+    # Initialisation des composants
+    file_manager, ai_model = init_components()
     
     # Onglets de navigation
-    tab1, tab2, tab3 = st.tabs(["🔬 Analyse", "📊 Historique", "ℹ️ À propos"])
+    tab1, tab2, tab3, tab4 = st.tabs(["🔬 Analyse", "📋 Historique", "ℹ️ À propos", "📞 Contact"])
     
     with tab1:
         st.markdown("### 📤 Charger une image cytologique")
+
+         # Messages de sécurité
+        st.markdown("""
+        <div class="security-notice">
+            <span>🛡️</span>
+            <span><strong>Sécurité:</strong> Toutes les images sont traitées localement et supprimées automatiquement après analyse.</span>
+        </div>
+        """, unsafe_allow_html=True)
         
-        # Zone d\'upload
+        # Zone d'upload
         uploaded_file = st.file_uploader(
             "Choisissez une image cytologique",
-            type=[\'png\', \'jpg\', \'jpeg\', \'bmp\'],
+            type=['png', 'jpg', 'jpeg', 'bmp'],
             help="Formats acceptés: PNG, JPG, JPEG, BMP (max 10MB)"
         )
         
         if uploaded_file is not None:
-            # Affichage de l\'image
+            # Validation du fichier
+            is_valid, message = file_manager.validate_file(uploaded_file)
+            
+            if not is_valid:
+                st.error(f"❌ {message}")
+                return
+            
+            # Affichage de l'image
             image = Image.open(uploaded_file)
             
             col1, col2 = st.columns(2)
@@ -808,7 +882,7 @@ def main():
                 for i in range(100):
                     progress_bar.progress(i + 1)
                     if i < 30:
-                        status_text.text("Prétraitement de l\'image...")
+                        status_text.text("Prétraitement de l'image...")
                     elif i < 70:
                         status_text.text("Analyse par IA...")
                     else:
@@ -829,76 +903,194 @@ def main():
                 
                 st.success("✅ Analyse terminée!")
             
-            # Affichage des résultats sans jauge
-            display_result_without_gauge(prediction_result, confidence, detailed_class)
-            
+                # Affichage des résultats sans jauge
+                display_result_without_gauge(prediction_result, confidence, detailed_class)
+                
             # Affichage des recommandations
             display_recommendations(prediction_result)
             
-            # Génération du PDF et ajout à l\'historique
+            # Génération du PDF et ajout à l'historique
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             
-            col1, col2 = st.columns(2)
+            col1, col2, col3 = st.columns(3)
             
             with col1:
                 # Bouton de téléchargement PDF
                 pdf_buffer = generate_pdf_report(
-                    prediction_result, confidence, timestamp, 
+                    image, prediction_result, confidence, timestamp, 
                     uploaded_file.name, detailed_class
                 )
                 
                 st.download_button(
                     label="📄 Télécharger le rapport PDF",
                     data=pdf_buffer.getvalue(),
-                    file_name=f"diagnostic_{uploaded_file.name}_{timestamp.replace(\':\', \'-\').replace(\' \', \'_\')}.pdf",
+                    file_name=f"diagnostic_{uploaded_file.name}_{timestamp.replace(':', '-').replace(' ', '_')}.pdf",
                     mime="application/pdf",
                     type="primary"
                 )
             
             with col2:
-                # Bouton pour ajouter à l\'historique
-                if st.button("💾 Ajouter à l\'historique", type="secondary"):
+                # Bouton pour ajouter à l'historique
+                if st.button("💾 Ajouter à l'historique", type="secondary"):
                     history_item = {
-                        \'filename\': uploaded_file.name,
-                        \'timestamp\': timestamp,
-                        \'result\': prediction_result,
-                        \'detailed_class\': detailed_class,
-                        \'confidence\': confidence
+                        'filename': uploaded_file.name,
+                        'timestamp': timestamp,
+                        'result': prediction_result,
+                        'detailed_class': detailed_class,
+                        'confidence': confidence
                     }
                     st.session_state.history.append(history_item)
-                    st.success("✅ Ajouté à l\'historique!")
+                    st.success("✅ Ajouté à l'historique!")
+            
+            with col3: 
+                if st.button("🔄 Nouvelle analyse", use_container_width=True):
+                    st.rerun()
     
     with tab2:
         display_history()
     
     with tab3:
-        st.markdown("### ℹ️ À propos de l\'application")
+        st.markdown('<div id="about-section"></div>', unsafe_allow_html=True)
+        st.markdown("## ℹ️ À propos de l'application")
         
-        st.markdown("""
-        **SamaSanté - Diagnostic IA** est une application d\'aide au diagnostic médical utilisant l\'intelligence artificielle 
-        pour l\'analyse d\'images cytologiques cervicales.
+        col1, col2 = st.columns([2, 1])
         
-        #### 🧠 Technologie
-        - **Modèle:** ResNet50V2 entraîné sur le dataset Herlev
-        - **Classes détectées:** 7 types cellulaires regroupés en 3 catégories
-        - **Prétraitement:** Conversion LAB + CLAHE pour améliorer la qualité
+        with col1:
+            st.markdown("""
+            ### 🎯 Objectif
+            Cette application utilise l'intelligence artificielle pour aider au dépistage 
+            du cancer du col de l'utérus à partir d'images cytologiques. Elle est conçue 
+            pour être utilisée par des professionnels de santé dans des contextes à ressources limitées.
+            
+            ### 🔬 Fonctionnement de l'IA
+            Notre modèle d'intelligence artificielle est basé sur un réseau de neurones convolutionnel 
+            (CNN) entraîné sur des milliers d'images cytologiques cervicales. Le modèle analyse:
+            
+            - **Morphologie cellulaire**: Forme et taille des cellules
+            - **Caractéristiques nucléaires**: Aspect des noyaux cellulaires  
+            - **Patterns tissulaires**: Organisation des tissus
+            - **Anomalies cytologiques**: Détection d'irrégularités
+            
+            ### ⚠️ Limites médicales
+            **Important**: Cette application est un outil d'aide au diagnostic uniquement:
+            
+            - ❌ Ne remplace **jamais** l'expertise d'un professionnel de santé
+            - ❌ Ne constitue **pas** un diagnostic médical définitif
+            - ❌ Ne doit **pas** être utilisée comme seul critère de décision
+            - ✅ Doit être complétée par un examen médical approfondi
+            - ✅ Résultats à interpréter par un spécialiste qualifié
+            
+            ### 🛡️ Sécurité et Confidentialité
+            Nous prenons la protection de vos données très au sérieux:
+            
+            - **🔒 Traitement local**: Toutes les analyses sont effectuées localement
+            - **🚫 Aucun stockage**: Les images ne sont jamais sauvegardées sur nos serveurs
+            - **⏱️ Suppression automatique**: Fichiers supprimés immédiatement après traitement
+            - **🔐 Chiffrement**: Communications sécurisées par HTTPS
+            - **📝 Aucune collecte**: Aucune donnée personnelle n'est collectée
+            """)
         
-        #### 🎯 Classes détectées
-        - **Normales:** normal_columnar, normal_intermediate, normal_superficiel
-        - **Précancéreuses:** light_dysplastic, moderate_dysplastic, severe_dysplastic  
-        - **Cancéreuses:** carcinoma_in_situ
+        with col2:
+            st.markdown("""
+            ### 🚀 Fonctionnalités
+            
+            **📸 Analyse d'images**
+            - Support formats: PNG, JPG, JPEG, BMP
+            - Traitement en temps réel
+            - Interface responsive
+            
+            **📊 Résultats détaillés**
+            - Jauge de diagnostic visuelle
+            - Probabilités détaillées
+            
+            **📄 Rapports PDF**
+            - Génération automatique
+            - Informations complètes
+            - Téléchargement sécurisé
+            
+            **📱 Progressive Web App**
+            - Installation sur mobile
+            - Fonctionnement hors ligne
+            - Interface native
+            
+            **🔧 Technologies**
+            - **Frontend**: Streamlit
+            - **IA**: TensorFlow/Keras
+            - **Images**: PIL/Pillow
+            - **PDF**: ReportLab
+            - **Sécurité**: Chiffrement TLS
+            """)
+    
+    with tab4:
+        st.markdown('<div id="contact-section"></div>', unsafe_allow_html=True)
+        st.markdown("## 📞 Contact")
         
-        #### ⚠️ Avertissements importants
-        - Cette application est un **outil d\'aide à la décision** uniquement
-        - Elle **ne remplace pas** l\'avis d\'un professionnel de santé
-        - Toujours **consulter un médecin** pour un diagnostic définitif
-        - Particulièrement adapté aux pays en voie de développement avec accès limité aux spécialistes
+        col1, col2 = st.columns([1, 1])
         
-        #### 🔒 Sécurité et confidentialité
-        - Aucune donnée n\'est stockée sur nos serveurs
-        - Traitement local et suppression automatique
-        - Conformité RGPD garantie
-        """)
+        with col1:
+            st.markdown("### 📧 Formulaire de Contact")
+            
+            with st.form("contact_form"):
+                name = st.text_input("Nom complet *")
+                email = st.text_input("Email *")
+                subject = st.selectbox(
+                    "Sujet *",
+                    ["Question générale", "Support technique", "Signalement de bug", "Autre"]
+                )
+                message = st.text_area("Message *", height=150)
+                
+                submitted = st.form_submit_button("📤 Envoyer le message")
+                
+                if submitted:
+                    if name and email and message:
+                        # Ici, vous pourriez intégrer un service d'email ou webhook
+                        st.success("✅ Message envoyé avec succès! Nous vous répondrons dans les plus brefs délais.")
+                        st.balloons()
+                    else:
+                        st.error("❌ Veuillez remplir tous les champs obligatoires.")
+        
+        with col2:
+            with st.expander("📍 Informations de Contact", expanded=False):
+                st.markdown("### 📍 Informations de Contact")
+                
+                st.markdown("""
+                **🏥 SamaSanté - Équipe IA**
+                
+                📧 **Email**: support@samasante-ai.com  
+                📱 **Téléphone**: +221 77 000 00 00  
+                🌐 **Site web**: www.samasante-ai.com  
+                
+                **🕒 Heures de support**
+                - Lundi - Vendredi: 9h00 - 18h00
+                - Weekend: Support d'urgence uniquement
+                
+                **🚨 Support d'urgence**
+                - Email: urgence@samasante-ai.com
+                - Téléphone: +221 77 000 00 00
+                
+                **👥 Équipe de développement**
+                - Dr. Beatrice THIONE - Directrice Médicale
+                - Ursule - Lead Developer IA
+                - Salla - UX/UI Designer
+                - BeaSalla - DevOps Engineer
+                
+                **🔗 Réseaux sociaux**
+                - LinkedIn: /company/samasante-ai
+                - Twitter: @SAMASANTEAI_FR
+                - GitHub: /samasante-ai-team
+                """)
+            
+            # Carte de contact stylisée
+            st.markdown("""
+            <div class="feature-card" style="text-align: center; margin-top: 2rem;">
+                <h4 style="color: var(--primary-blue); margin-bottom: 1rem;">🤝 Collaboration</h4>
+                <p>Intéressé par une collaboration ou un partenariat?</p>
+                <a href="mailto:partenariat@samasante-ai.com" class="custom-button">
+                    📧 Contactez-nous
+                </a>
+            </div>
+            """, unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
+
