@@ -869,7 +869,7 @@ def main():
             
             with col1:
                 st.markdown("#### 🖼️ Image chargée")
-                st.image(image, caption=uploaded_file.name, use_column_width=True)
+                st.image(image, caption=uploaded_file.name, use_container_width=True)
             
             with col2:
                 st.markdown("#### 🔬 Analyse en cours...")
