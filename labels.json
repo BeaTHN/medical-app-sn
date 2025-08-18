@@ -1,0 +1,9 @@
+{
+  "carcinoma_in_situ": 0,
+  "light_dysplastic": 1,
+  "moderate_dysplastic": 2,
+  "normal_columnar": 3,
+  "normal_intermediate": 4,
+  "normal_superficiel": 5,
+  "severe_dysplastic": 6
+}
