@@ -24,7 +24,7 @@ from reportlab.lib.units import inch
 from reportlab.lib import colors
 import cv2
 import gdown
-
+from pathlib import Path
 
 # Import du module PWA
 try:
@@ -423,6 +423,7 @@ class MedicalAIModel:
     def __init__(self):
         self.model = None
         self.classes = ["Normal", "Précancéreux", "Cancéreux"]
+        path = ensure_model_on_disk()  # télécharge si besoin
         self.detailed_classes = self.load_labels()
         self.model_path = "ResNet50V2_3.keras"
         self.load_model()
@@ -454,8 +455,7 @@ class MedicalAIModel:
                 self.model = None
                 return
 
-            model_local_path = "ResNet50V23.keras"
-            # >>> ASSUREZ-VOUS QUE CET ID EST CORRECT <<< 
+            model_local_path = "ResNet50V_3.keras"
             google_drive_file_id = "1nf8CpWwvDuQUaHjuju1OdPlXvvOFUwc0" 
 
             if not os.path.exists(model_local_path):
