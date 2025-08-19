@@ -418,14 +418,15 @@ class SecureFileManager:
         except:
             pass
 
+GDRIVE_FILE_ID = "1nf8CpWwvDuQUaHjuju1OdPlXvvOFUwc0"  # <-- TON ID
+MODEL_FILENAME = "ResNet50V2_3.keras"
+
 # Classe pour le modèle de prédiction
 class MedicalAIModel:
     def __init__(self):
         self.model = None
         self.classes = ["Normal", "Précancéreux", "Cancéreux"]
-        path = ensure_model_on_disk()  # télécharge si besoin
         self.detailed_classes = self.load_labels()
-        self.model_path = "ResNet50V2_3.keras"
         self.load_model()
     
     def load_labels(self):
@@ -448,32 +449,38 @@ class MedicalAIModel:
 
 
     def load_model(self):
-        """Charge le modèle de prédiction (essaie plusieurs chemins, y compris Google Drive)."""
+        """Charge le modèle : si absent, le télécharge depuis Google Drive avec gdown."""
         try:
             if not TF_AVAILABLE:
                 st.warning("⚠️ TensorFlow non disponible, mode démo")
                 self.model = None
                 return
 
-            model_local_path = "ResNet50V_3.keras"
-            google_drive_file_id = "1nf8CpWwvDuQUaHjuju1OdPlXvvOFUwc0" 
+            model_local_path = MODEL_FILENAME
 
-            if not os.path.exists(model_local_path):
+            # 1) Si le fichier n'existe pas localement, on le télécharge depuis Drive
+            if not os.path.exists(model_local_path) or os.path.getsize(model_local_path) == 0:
                 st.info("Téléchargement du modèle depuis Google Drive...")
                 try:
-                    gdown.download(id=google_drive_file_id, output=model_local_path, quiet=False)
+                    # Deux syntaxes possibles avec gdown : par id=... ou par url=...
+                    gdown.download(id=GDRIVE_FILE_ID, output=model_local_path, quiet=False)
+                    # Alternative :
+                    # url = f"https://drive.google.com/uc?id={GDRIVE_FILE_ID}"
+                    # gdown.download(url=url, output=model_local_path, quiet=False)
                     st.success("✅ Modèle téléchargé avec succès !")
                 except Exception as e:
                     st.error(f"❌ Erreur lors du téléchargement du modèle depuis Google Drive: {e}")
                     self.model = None
                     return
 
+            # 2) Chargement Keras
             if os.path.exists(model_local_path):
                 self.model = keras.models.load_model(model_local_path)
-                st.success(f"✅ Modèle chargé localement")
+                st.success(f"✅ Modèle chargé : {model_local_path}")
             else:
-                st.warning("⚠️ Aucun fichier modèle trouvé localement après tentative de téléchargement, mode démo")
+                st.warning("⚠️ Modèle introuvable après téléchargement — mode démo")
                 self.model = None
+
         except Exception as e:
             st.error(f"❌ Erreur chargement modèle: {e}")
             self.model = None
